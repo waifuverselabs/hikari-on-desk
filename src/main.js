@@ -855,11 +855,15 @@ function flashTaskbar() {
     }
   }
 
-  // Cache the highlight icon (orange circle) on first call
+  // Cache the highlight icon: the normal Hikari icon BADGED with a small orange
+  // dot — not a full-size replacement. On macOS keep it at menu-bar size (the
+  // @2x asset handles retina); Windows/Linux trays render at 32px to match the
+  // resting icon, so only the dot appears to blink there.
   if (!trayFlashHighlightIcon) {
     const flashPath = path.join(__dirname, "../assets/tray-icon-flash.png");
     if (fs.existsSync(flashPath)) {
-      const img = nativeImage.createFromPath(flashPath).resize({ width: 32, height: 32 });
+      let img = nativeImage.createFromPath(flashPath);
+      if (process.platform !== "darwin") img = img.resize({ width: 32, height: 32 });
       if (!img.isEmpty()) {
         trayFlashHighlightIcon = img;
       }
