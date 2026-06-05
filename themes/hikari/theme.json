@@ -46,7 +46,8 @@
       "calico-working-typing.apng"
     ],
     "music": [
-      "calico-music.apng"
+      "calico-music.apng",
+      "calico-music-raver.apng"
     ],
     "juggling": [
       "calico-working-juggling.apng"
@@ -265,6 +266,7 @@
       "calico-mini-peek.apng": 1.15,
       "calico-mini-sleep.apng": 1.15,
       "calico-music.apng": 1,
+      "calico-music-raver.apng": 1,
       "calico-notification.apng": 1,
       "calico-react-drag.apng": 1,
       "calico-react-left.apng": 1,
@@ -331,6 +333,10 @@
         "y": 65
       },
       "calico-music.apng": {
+        "x": 0,
+        "y": 0
+      },
+      "calico-music-raver.apng": {
         "x": 0,
         "y": 0
       },
