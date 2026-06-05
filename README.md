@@ -38,7 +38,7 @@ Hikari watches your own desktop activity (no AI agent required) and mirrors it:
 
 - **You come first.** Your typing and music take priority over agent activity; the agent only fills the gaps when you're idle.
 - **Keyboard-aware sleep.** She sleeps only when you're *truly* inactive (keyboard **and** mouse), and wakes on any key press or mouse move.
-- **Private.** No accessibility prompts, no telemetry. *(Ambient detection is macOS-first today.)*
+- **Private & cross-platform.** No accessibility prompts, no telemetry. Ambient detection runs on **macOS and Windows** — typing (CoreGraphics / `GetAsyncKeyState`), music (Spotify·Apple Music player state / Windows SMTC "now playing"), and the focused app (`lsappinfo` / `GetForegroundWindow`).
 
 Toggle it in **Settings → General → Ambient desktop activity**.
 

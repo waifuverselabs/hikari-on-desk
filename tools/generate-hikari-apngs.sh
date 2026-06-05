@@ -13,6 +13,7 @@ CANVAS_H="${CANVAS_H:-200}"
 PNGQUANT_QUALITY="${PNGQUANT_QUALITY:-75-95}"
 KEY_COLOR="${KEY_COLOR:-#00ff00}"
 KEY_FUZZ="${KEY_FUZZ:-25%}"
+FULL_CELL_SHAVE_X="${FULL_CELL_SHAVE_X:-30}"
 
 if ! command -v magick >/dev/null 2>&1; then
   echo "ImageMagick is required. Install it with: brew install imagemagick" >&2
@@ -55,7 +56,7 @@ sheet_file() {
 sheet_frames() {
   case "$1" in
     typing) echo 4 ;;
-    thinking|building|sweeping|juggling) echo 16 ;;
+    thinking|building|sweeping|juggling) echo 8 ;;
     dance|idle|sleep|error|work|status|react|mini) echo 6 ;;
     *) echo "unknown sheet key: $1" >&2; exit 1 ;;
   esac
@@ -92,7 +93,23 @@ source_cell() {
   mkdir -p "${split_dir}"
 
   if [[ ! -f "${split_dir}/frame_00.png" ]]; then
-    magick "${sheet}" -crop "${count}x1@" +repage "${split_dir}/frame_%02d.png"
+    local sheet_w sheet_h cell_w norm_w
+    read -r sheet_w sheet_h < <(magick identify -format "%w %h" "${sheet}")
+    cell_w=$(((sheet_w + count - 1) / count))
+    norm_w=$((cell_w * count))
+
+    local normalized="${split_dir}/normalized.png"
+    magick "${sheet}" \
+      -gravity center -background "${KEY_COLOR}" -extent "${norm_w}x${sheet_h}" \
+      "${normalized}"
+
+    local split_index split_out
+    for ((split_index = 0; split_index < count; split_index++)); do
+      printf -v split_out "%s/frame_%02d.png" "${split_dir}" "${split_index}"
+      magick "${normalized}" \
+        -crop "${cell_w}x${sheet_h}+$((split_index * cell_w))+0" +repage \
+        "${split_out}"
+    done
   fi
 
   local idx=$((frame_index - 1))
@@ -106,7 +123,7 @@ source_cell() {
   local crop_w
   crop_w="$(sheet_crop_w "${sheet_key}")"
   if [[ "${crop_w}" == "full" ]]; then
-    magick "${cell}" "${out}"
+    magick "${cell}" -shave "${FULL_CELL_SHAVE_X}x0" "${out}"
   elif [[ -n "${crop_w}" ]]; then
     magick "${cell}" \
       -gravity center -crop "${crop_w}x9999+0+0" +repage \
@@ -132,7 +149,18 @@ compose_frame() {
   local sprite="${TMP_ROOT}/sprite-${sheet_key}-${frame_index}-$$.png"
   source_cell "${sheet_key}" "${frame_index}" "${raw}"
 
-  if [[ "${mode}" == "box" ]]; then
+  if [[ "${mode}" == "cellbox" ]]; then
+    if [[ -z "${fixed_geometry}" ]]; then
+      echo "cellbox mode requires a common crop geometry for ${token}" >&2
+      exit 1
+    fi
+
+    magick "${raw}" \
+      -alpha set -fuzz "${KEY_FUZZ}" -transparent "${KEY_COLOR}" \
+      -crop "${fixed_geometry}" +repage \
+      -resize "${fit_w}x${fit_h}>" \
+      "${sprite}"
+  elif [[ "${mode}" == "box" ]]; then
     if [[ -z "${fixed_geometry}" ]]; then
       echo "box mode requires a common size for ${token}" >&2
       exit 1
@@ -185,7 +213,7 @@ trim_geometry_for_token() {
   local trim_bounds
   trim_bounds="$(magick "${raw}" \
     -alpha set -fuzz "${KEY_FUZZ}" -transparent "${KEY_COLOR}" \
-    -trim -format "%@" info:)"
+    -format "%@" info:)"
 
   local raw_dims
   raw_dims="$(magick identify -format "%w %h" "${raw}")"
@@ -217,6 +245,44 @@ box_sequence_size() {
   done
 
   echo "$((max_w + pad * 2))x$((max_h + pad * 2))"
+}
+
+cellbox_sequence_geometry() {
+  local sequence="$1"
+  local pad="${CELLBOX_PAD:-8}"
+  local tokens=()
+  IFS=',' read -ra tokens <<< "${sequence}"
+
+  local min_y=999999
+  local max_y=0
+  local raw_w=0
+  local raw_h=0
+
+  local token
+  for token in "${tokens[@]}"; do
+    local geometry dims
+    trim_geometry_for_token "${token}" geometry dims
+
+    local _w="${geometry%%x*}"
+    local rest="${geometry#*x}"
+    local h="${rest%%+*}"
+    rest="${rest#*+}"
+    local _x="${rest%%+*}"
+    local y="${rest#*+}"
+
+    raw_w="${dims%% *}"
+    raw_h="${dims#* }"
+
+    if (( y < min_y )); then min_y="${y}"; fi
+    if (( y + h > max_y )); then max_y=$((y + h)); fi
+  done
+
+  min_y=$((min_y - pad))
+  max_y=$((max_y + pad))
+  if (( min_y < 0 )); then min_y=0; fi
+  if (( max_y > raw_h )); then max_y="${raw_h}"; fi
+
+  echo "${raw_w}x$((max_y - min_y))+0+${min_y}"
 }
 
 make_apng() {
@@ -252,7 +318,9 @@ make_apng() {
   fi
 
   local fixed_geometry=""
-  if [[ "${mode}" == "box" ]]; then
+  if [[ "${mode}" == "cellbox" ]]; then
+    fixed_geometry="$(cellbox_sequence_geometry "${sequence}")"
+  elif [[ "${mode}" == "box" ]]; then
     fixed_geometry="$(box_sequence_size "${sequence}")"
   fi
 
@@ -264,11 +332,14 @@ make_apng() {
     compose_frame "${token}" "${fit_w}" "${fit_h}" "${frame_path}" "${mode}" "${fixed_geometry}"
   done
 
-  pngquant --force --speed 1 --quality "${PNGQUANT_QUALITY}" --ext .png "${work_dir}"/frame_*.png
+  if ! pngquant --force --speed 1 --quality "${PNGQUANT_QUALITY}" --ext .png "${work_dir}"/frame_*.png; then
+    echo "pngquant quality target was not met for ${filename}; keeping truecolor frames" >&2
+  fi
   apngasm -F -o "${out}" "${work_dir}"/frame_*.png -d "1:${fps}" -l 0 >/dev/null
 
   if command -v oxipng >/dev/null 2>&1; then
-    oxipng -q -o 4 --strip safe --alpha "${out}"
+    oxipng -q -o 4 --strip safe --alpha "${out}" || \
+      echo "oxipng could not optimize ${filename}; keeping assembled APNG" >&2
   fi
 }
 
@@ -280,16 +351,16 @@ SPECS=(
   "calico-collapsing.apng|8|41|230|185|sleep:2:0:0,sleep:3:0:2,sleep:3:0:4,sleep:4:0:3"
   "calico-sleeping.apng|8|40|235|175|sleep:4:0:2,sleep:4:0:3,sleep:4:0:2,sleep:4:0:1"
   "calico-waking.apng|8|41|225|185|sleep:4:0:2,sleep:5:0:1,sleep:5:0:0,sleep:6:0:-1,idle:1:0:0"
-  "calico-thinking.apng|8|30|215|185|thinking:1:0:0,thinking:2:0:0,thinking:3:0:0,thinking:4:0:0,thinking:5:0:0,thinking:6:0:0,thinking:7:0:0,thinking:8:0:0,thinking:9:0:0,thinking:10:0:0,thinking:11:0:0,thinking:12:0:0,thinking:13:0:0,thinking:14:0:0,thinking:15:0:0,thinking:16:0:0,thinking:15:0:0,thinking:14:0:0,thinking:13:0:0,thinking:12:0:0,thinking:11:0:0,thinking:10:0:0,thinking:9:0:0,thinking:8:0:0,thinking:7:0:0,thinking:6:0:0,thinking:5:0:0,thinking:4:0:0,thinking:3:0:0,thinking:2:0:0|box"
+  "calico-thinking.apng|8|8|220|185|thinking:1:0:0,thinking:2:0:0,thinking:3:0:0,thinking:4:0:0,thinking:5:0:0,thinking:6:0:0,thinking:7:0:0,thinking:8:0:0|cellbox"
   "calico-error.apng|8|29|220|185|error:1:0:-2,error:2:-2:1,error:3:2:1,error:4:0:-1,error:5:-2:0,error:6:0:0"
   "calico-happy.apng|8|64|215|185|status:5:0:-2,dance:1:0:0,dance:2:0:-1,dance:4:0:-2,dance:6:0:0"
   "calico-notification.apng|8|41|215|185|status:4:0:-1,error:1:0:-2,status:4:2:0,status:4:-2:0"
   "calico-music.apng|8|41|215|185|dance:1:0:0,dance:2:0:-2,dance:3:0:0,dance:4:0:-2,dance:5:0:0,dance:6:0:-1"
   "calico-working-typing.apng|16|61|240|185|typing:1:0:0,typing:2:0:0,typing:3:0:0,typing:4:0:0"
-  "calico-working-building.apng|8|30|220|185|building:1:0:0,building:2:0:0,building:3:0:0,building:4:0:0,building:5:0:0,building:6:0:0,building:7:0:0,building:8:0:0,building:9:0:0,building:10:0:0,building:11:0:0,building:12:0:0,building:13:0:0,building:14:0:0,building:15:0:0,building:16:0:0,building:15:0:0,building:14:0:0,building:13:0:0,building:12:0:0,building:11:0:0,building:10:0:0,building:9:0:0,building:8:0:0,building:7:0:0,building:6:0:0,building:5:0:0,building:4:0:0,building:3:0:0,building:2:0:0|box"
-  "calico-working-juggling.apng|8|30|220|185|juggling:1:0:0,juggling:2:0:0,juggling:3:0:0,juggling:4:0:0,juggling:5:0:0,juggling:6:0:0,juggling:7:0:0,juggling:8:0:0,juggling:9:0:0,juggling:10:0:0,juggling:11:0:0,juggling:12:0:0,juggling:13:0:0,juggling:14:0:0,juggling:15:0:0,juggling:16:0:0,juggling:15:0:0,juggling:14:0:0,juggling:13:0:0,juggling:12:0:0,juggling:11:0:0,juggling:10:0:0,juggling:9:0:0,juggling:8:0:0,juggling:7:0:0,juggling:6:0:0,juggling:5:0:0,juggling:4:0:0,juggling:3:0:0,juggling:2:0:0|box"
+  "calico-working-building.apng|8|8|220|185|building:1:0:0,building:2:0:0,building:3:0:0,building:4:0:0,building:5:0:0,building:6:0:0,building:7:0:0,building:8:0:0|cellbox"
+  "calico-working-juggling.apng|8|8|220|185|juggling:1:0:0,juggling:2:0:0,juggling:3:0:0,juggling:4:0:0,juggling:5:0:0,juggling:6:0:0,juggling:7:0:0,juggling:8:0:0|cellbox"
   "calico-working-conducting.apng|8|41|220|185|status:3:0:-1,status:3:-2:0,status:3:2:0,status:3:0:1"
-  "calico-working-sweeping.apng|8|30|220|185|sweeping:1:0:0,sweeping:2:0:0,sweeping:3:0:0,sweeping:4:0:0,sweeping:5:0:0,sweeping:6:0:0,sweeping:7:0:0,sweeping:8:0:0,sweeping:9:0:0,sweeping:10:0:0,sweeping:11:0:0,sweeping:12:0:0,sweeping:13:0:0,sweeping:14:0:0,sweeping:15:0:0,sweeping:16:0:0,sweeping:15:0:0,sweeping:14:0:0,sweeping:13:0:0,sweeping:12:0:0,sweeping:11:0:0,sweeping:10:0:0,sweeping:9:0:0,sweeping:8:0:0,sweeping:7:0:0,sweeping:6:0:0,sweeping:5:0:0,sweeping:4:0:0,sweeping:3:0:0,sweeping:2:0:0|box"
+  "calico-working-sweeping.apng|8|8|220|185|sweeping:1:0:0,sweeping:2:0:0,sweeping:3:0:0,sweeping:4:0:0,sweeping:5:0:0,sweeping:6:0:0,sweeping:7:0:0,sweeping:8:0:0|cellbox"
   "calico-working-carrying.apng|8|41|220|185|work:5:-3:0,work:5:0:-1,work:5:3:0,work:5:0:1"
   "calico-react-drag.apng|8|32|220|185|react:5:-3:0,react:5:3:1,react:5:0:2,react:6:0:0"
   "calico-react-left.apng|8|41|220|185|react:3:-4:0,react:3:-2:1,react:4:2:0,react:6:0:0"

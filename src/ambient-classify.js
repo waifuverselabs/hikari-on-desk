@@ -19,24 +19,39 @@ const CATEGORY_BUNDLE_TOKENS = {
     "com.microsoft.excel", "com.microsoft.onenote", "md.obsidian", "notion.id", "com.notion",
     "abnerworks.typora", "com.typora", "net.ia.writer", "pro.writer.mac", "com.coteditor.coteditor",
     "com.uranusjr.macdown", "org.libreoffice", "net.shinyfrog.bear", "com.bear-writer",
+    // Windows executables (frontmost app reports the exe name):
+    "code.exe", "code - insiders.exe", "cursor.exe", "devenv.exe", "rider64.exe", "pycharm64.exe",
+    "idea64.exe", "webstorm64.exe", "goland64.exe", "clion64.exe", "phpstorm64.exe", "rubymine64.exe",
+    "sublime_text.exe", "notepad++.exe", "notepad.exe", "winword.exe", "powerpnt.exe", "excel.exe",
+    "onenote.exe", "obsidian.exe", "typora.exe", "zed.exe", "hbuilderx.exe", "acrord32.exe", "wps.exe",
   ],
   terminal: [
     "com.apple.terminal", "com.googlecode.iterm2", "dev.warp.warp", "io.alacritty",
     "net.kovidgoyal.kitty", "com.github.wez.wezterm", "co.zeit.hyper", "org.tabby",
     "com.mitchellh.ghostty",
+    // Windows:
+    "windowsterminal.exe", "wt.exe", "cmd.exe", "powershell.exe", "pwsh.exe", "conhost.exe",
+    "alacritty.exe", "wezterm-gui.exe", "mintty.exe",
   ],
   browser: [
     "com.google.chrome", "com.apple.safari", "company.thebrowser.browser", "org.mozilla.firefox",
     "com.microsoft.edgemac", "com.brave.browser", "com.operasoftware.opera", "com.vivaldi.vivaldi",
     "ru.yandex.desktop.yandex-browser",
+    // Windows:
+    "chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "opera.exe", "vivaldi.exe",
+    "arc.exe", "chromium.exe",
   ],
   media: [
     "com.apple.music", "com.spotify.client", "org.videolan.vlc", "com.apple.quicktimeplayerx",
     "com.colliderli.iina", "com.apple.podcasts", "com.apple.tv", "tv.plex", "com.apple.itunes",
+    // Windows:
+    "spotify.exe", "vlc.exe", "wmplayer.exe", "foobar2000.exe", "itunes.exe", "aimp.exe",
   ],
   chat: [
     "com.tinyspeck.slackmacgap", "com.hnc.discord", "com.microsoft.teams", "com.apple.messages",
     "ru.keepcoder.telegram", "net.whatsapp.whatsapp", "us.zoom.xos",
+    // Windows:
+    "discord.exe", "slack.exe", "teams.exe", "ms-teams.exe", "telegram.exe", "whatsapp.exe", "zoom.exe",
   ],
 };
 

@@ -34,6 +34,21 @@ describe("ambient-classify · classifyApp", () => {
     assert.strictEqual(classifyApp({ bundle: "", name: "WezTerm" }), "terminal");
   });
 
+  it("classifies Windows executables (frontmost app reports the exe name)", () => {
+    // On Windows the foreground reader sets both name and bundle to the exe.
+    const win = (exe) => classifyApp({ name: exe, bundle: exe });
+    assert.strictEqual(win("Code.exe"), "editor");
+    assert.strictEqual(win("Cursor.exe"), "editor");
+    assert.strictEqual(win("WINWORD.EXE"), "editor");
+    assert.strictEqual(win("devenv.exe"), "editor");
+    assert.strictEqual(win("chrome.exe"), "browser");
+    assert.strictEqual(win("msedge.exe"), "browser");
+    assert.strictEqual(win("WindowsTerminal.exe"), "terminal");
+    assert.strictEqual(win("Spotify.exe"), "media");
+    assert.strictEqual(win("Discord.exe"), "chat");
+    assert.strictEqual(win("explorer.exe"), null); // not a category we react to
+  });
+
   it("returns null for unknown apps and bad input", () => {
     assert.strictEqual(classifyApp({ bundle: "com.foo.bar", name: "Foo" }), null);
     assert.strictEqual(classifyApp(null), null);
