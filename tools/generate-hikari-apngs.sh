@@ -42,6 +42,7 @@ sheet_file() {
     thinking) echo "hikari-thinking.png" ;;
     building) echo "hikari-building.png" ;;
     sweeping) echo "hikari-sweeping.png" ;;
+    juggling) echo "hikari-juggling.png" ;;
     error) echo "hikari-error-alert.png" ;;
     work) echo "hikari-work-utility.png" ;;
     status) echo "hikari-status-special.png" ;;
@@ -54,7 +55,8 @@ sheet_file() {
 sheet_frames() {
   case "$1" in
     typing) echo 4 ;;
-    dance|idle|sleep|thinking|building|sweeping|error|work|status|react|mini) echo 6 ;;
+    thinking|building|sweeping|juggling) echo 16 ;;
+    dance|idle|sleep|error|work|status|react|mini) echo 6 ;;
     *) echo "unknown sheet key: $1" >&2; exit 1 ;;
   esac
 }
@@ -65,13 +67,13 @@ sheet_crop_w() {
     work|status) echo 300 ;;
     react|error) echo 330 ;;
     mini) echo 320 ;;
-    building|sweeping) echo 360 ;;
+    thinking|building|sweeping|juggling) echo full ;;
     dance|idle|sleep|thinking) echo 340 ;;
     *) echo "" ;;
   esac
 }
 
-for key in typing dance idle sleep thinking building sweeping error work status react mini; do
+for key in typing dance idle sleep thinking building sweeping juggling error work status react mini; do
   file="$(sheet_file "${key}")"
   if [[ ! -f "${SHEETS_DIR}/${file}" ]]; then
     echo "source sheet not found: ${SHEETS_DIR}/${file}" >&2
@@ -103,7 +105,9 @@ source_cell() {
 
   local crop_w
   crop_w="$(sheet_crop_w "${sheet_key}")"
-  if [[ -n "${crop_w}" ]]; then
+  if [[ "${crop_w}" == "full" ]]; then
+    magick "${cell}" "${out}"
+  elif [[ -n "${crop_w}" ]]; then
     magick "${cell}" \
       -gravity center -crop "${crop_w}x9999+0+0" +repage \
       "${out}"
@@ -276,16 +280,16 @@ SPECS=(
   "calico-collapsing.apng|8|41|230|185|sleep:2:0:0,sleep:3:0:2,sleep:3:0:4,sleep:4:0:3"
   "calico-sleeping.apng|8|40|235|175|sleep:4:0:2,sleep:4:0:3,sleep:4:0:2,sleep:4:0:1"
   "calico-waking.apng|8|41|225|185|sleep:4:0:2,sleep:5:0:1,sleep:5:0:0,sleep:6:0:-1,idle:1:0:0"
-  "calico-thinking.apng|8|80|215|185|thinking:1:0:0:8,thinking:2:0:0:8,thinking:3:0:0:8,thinking:4:0:0:8,thinking:5:0:0:10,thinking:6:0:0:10,thinking:5:0:0:8,thinking:4:0:0:8,thinking:3:0:0:6,thinking:2:0:0:6|box"
+  "calico-thinking.apng|8|30|215|185|thinking:1:0:0,thinking:2:0:0,thinking:3:0:0,thinking:4:0:0,thinking:5:0:0,thinking:6:0:0,thinking:7:0:0,thinking:8:0:0,thinking:9:0:0,thinking:10:0:0,thinking:11:0:0,thinking:12:0:0,thinking:13:0:0,thinking:14:0:0,thinking:15:0:0,thinking:16:0:0,thinking:15:0:0,thinking:14:0:0,thinking:13:0:0,thinking:12:0:0,thinking:11:0:0,thinking:10:0:0,thinking:9:0:0,thinking:8:0:0,thinking:7:0:0,thinking:6:0:0,thinking:5:0:0,thinking:4:0:0,thinking:3:0:0,thinking:2:0:0|box"
   "calico-error.apng|8|29|220|185|error:1:0:-2,error:2:-2:1,error:3:2:1,error:4:0:-1,error:5:-2:0,error:6:0:0"
   "calico-happy.apng|8|64|215|185|status:5:0:-2,dance:1:0:0,dance:2:0:-1,dance:4:0:-2,dance:6:0:0"
   "calico-notification.apng|8|41|215|185|status:4:0:-1,error:1:0:-2,status:4:2:0,status:4:-2:0"
   "calico-music.apng|8|41|215|185|dance:1:0:0,dance:2:0:-2,dance:3:0:0,dance:4:0:-2,dance:5:0:0,dance:6:0:-1"
   "calico-working-typing.apng|16|61|240|185|typing:1:0:0,typing:2:0:0,typing:3:0:0,typing:4:0:0"
-  "calico-working-building.apng|8|64|220|185|building:1:0:0:6,building:2:0:0:7,building:3:0:0:8,building:4:0:0:8,building:5:0:0:7,building:6:0:0:12,building:5:0:0:6,building:4:0:0:5,building:3:0:0:3,building:2:0:0:2|box"
-  "calico-working-juggling.apng|8|41|220|185|status:2:0:-1,status:2:-2:0,status:2:2:0,dance:5:0:0"
+  "calico-working-building.apng|8|30|220|185|building:1:0:0,building:2:0:0,building:3:0:0,building:4:0:0,building:5:0:0,building:6:0:0,building:7:0:0,building:8:0:0,building:9:0:0,building:10:0:0,building:11:0:0,building:12:0:0,building:13:0:0,building:14:0:0,building:15:0:0,building:16:0:0,building:15:0:0,building:14:0:0,building:13:0:0,building:12:0:0,building:11:0:0,building:10:0:0,building:9:0:0,building:8:0:0,building:7:0:0,building:6:0:0,building:5:0:0,building:4:0:0,building:3:0:0,building:2:0:0|box"
+  "calico-working-juggling.apng|8|30|220|185|juggling:1:0:0,juggling:2:0:0,juggling:3:0:0,juggling:4:0:0,juggling:5:0:0,juggling:6:0:0,juggling:7:0:0,juggling:8:0:0,juggling:9:0:0,juggling:10:0:0,juggling:11:0:0,juggling:12:0:0,juggling:13:0:0,juggling:14:0:0,juggling:15:0:0,juggling:16:0:0,juggling:15:0:0,juggling:14:0:0,juggling:13:0:0,juggling:12:0:0,juggling:11:0:0,juggling:10:0:0,juggling:9:0:0,juggling:8:0:0,juggling:7:0:0,juggling:6:0:0,juggling:5:0:0,juggling:4:0:0,juggling:3:0:0,juggling:2:0:0|box"
   "calico-working-conducting.apng|8|41|220|185|status:3:0:-1,status:3:-2:0,status:3:2:0,status:3:0:1"
-  "calico-working-sweeping.apng|8|48|220|185|sweeping:1:0:0:6,sweeping:2:0:0:7,sweeping:3:0:0:7,sweeping:4:0:0:8,sweeping:5:0:0:8,sweeping:6:0:0:8,sweeping:5:0:0:4|box"
+  "calico-working-sweeping.apng|8|30|220|185|sweeping:1:0:0,sweeping:2:0:0,sweeping:3:0:0,sweeping:4:0:0,sweeping:5:0:0,sweeping:6:0:0,sweeping:7:0:0,sweeping:8:0:0,sweeping:9:0:0,sweeping:10:0:0,sweeping:11:0:0,sweeping:12:0:0,sweeping:13:0:0,sweeping:14:0:0,sweeping:15:0:0,sweeping:16:0:0,sweeping:15:0:0,sweeping:14:0:0,sweeping:13:0:0,sweeping:12:0:0,sweeping:11:0:0,sweeping:10:0:0,sweeping:9:0:0,sweeping:8:0:0,sweeping:7:0:0,sweeping:6:0:0,sweeping:5:0:0,sweeping:4:0:0,sweeping:3:0:0,sweeping:2:0:0|box"
   "calico-working-carrying.apng|8|41|220|185|work:5:-3:0,work:5:0:-1,work:5:3:0,work:5:0:1"
   "calico-react-drag.apng|8|32|220|185|react:5:-3:0,react:5:3:1,react:5:0:2,react:6:0:0"
   "calico-react-left.apng|8|41|220|185|react:3:-4:0,react:3:-2:1,react:4:2:0,react:6:0:0"
