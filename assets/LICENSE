@@ -1,0 +1,24 @@
+All Rights Reserved
+
+The artwork in this directory and its subdirectories — including the Hikari
+character, all of her animations (themes/hikari/), the application icons, and the
+tray/dock icons — is original work and is NOT covered by the project's
+source-code license (AGPL-3.0).
+
+Hikari character & artwork:
+  Copyright (c) 2026 waifuverselabs. All rights reserved.
+
+You may NOT copy, modify, distribute, or use any of this artwork without explicit
+written permission from waifuverselabs, except as part of personal use of the
+Hikari on Desk application as distributed by waifuverselabs.
+
+Third-party marks:
+  Agent logos in assets/icons/agents/ are the trademarks of their respective
+  owners (Anthropic, OpenAI, Google, GitHub, Cursor, and others) and are used
+  only to identify those integrations. The OpenClaw lobster icon is adapted under
+  the MIT License — see ../NOTICE.md.
+
+Inherited assets:
+  The notification sounds in assets/sounds/ (complete.mp3, confirm.mp3) are
+  inherited from the upstream clawd-on-desk project; verify or replace them
+  before any commercial distribution.
