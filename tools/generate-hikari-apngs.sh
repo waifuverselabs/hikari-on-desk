@@ -359,7 +359,7 @@ SPECS=(
   "calico-happy.apng|8|64|215|185|status:5:0:-2,dance:1:0:0,dance:2:0:-1,dance:4:0:-2,dance:6:0:0"
   "calico-notification.apng|8|41|215|185|status:4:0:-1,error:1:0:-2,status:4:2:0,status:4:-2:0"
   "calico-music.apng|8|41|215|185|dance:1:0:0,dance:2:0:-2,dance:3:0:0,dance:4:0:-2,dance:5:0:0,dance:6:0:-1"
-  "calico-music-raver.apng|12|16|220|185|raver:1:0:0,raver:2:0:0,raver:3:0:0,raver:4:0:0,raver:5:0:0,raver:6:0:0,raver:7:0:0,raver:8:0:0,raver:9:0:0,raver:10:0:0,raver:11:0:0,raver:12:0:0,raver:13:0:0,raver:14:0:0,raver:15:0:0,raver:16:0:0|cellbox"
+  "calico-music-raver.apng|6|12|220|185|raver:1:0:0,raver:5:0:0,raver:6:0:0,raver:7:0:0,raver:10:0:0,raver:11:0:0,raver:10:0:0,raver:7:0:0,raver:6:0:0,raver:5:0:0,raver:16:0:0,raver:1:0:0|cellbox"
   "calico-working-typing.apng|16|61|240|185|typing:1:0:0,typing:2:0:0,typing:3:0:0,typing:4:0:0"
   "calico-working-building.apng|8|8|220|185|building:1:0:0,building:2:0:0,building:3:0:0,building:4:0:0,building:5:0:0,building:6:0:0,building:7:0:0,building:8:0:0|cellbox"
   "calico-working-juggling.apng|8|8|220|185|juggling:1:0:0,juggling:2:0:0,juggling:3:0:0,juggling:4:0:0,juggling:5:0:0,juggling:6:0:0,juggling:7:0:0,juggling:8:0:0|cellbox"
