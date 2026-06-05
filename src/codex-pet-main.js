@@ -110,7 +110,7 @@ function createCodexPetMain(options = {}) {
 
   function getActiveThemeId() {
     const activeTheme = typeof options.getActiveTheme === "function" ? options.getActiveTheme() : null;
-    return activeTheme ? activeTheme._id : (settingsController.get("theme") || "clawd");
+    return activeTheme ? activeTheme._id : (settingsController.get("theme") || themeLoader.DEFAULT_THEME_ID || "hikari");
   }
 
   function getDialogParent() {
@@ -239,16 +239,17 @@ function createCodexPetMain(options = {}) {
     }
 
     if (summaryHasActiveCodexPetOrphan(summary, activeId)) {
-      const result = await settingsController.applyCommand("setThemeSelection", { themeId: "clawd" });
+      const fallbackThemeId = themeLoader.DEFAULT_THEME_ID || "hikari";
+      const result = await settingsController.applyCommand("setThemeSelection", { themeId: fallbackThemeId });
       if (!result || result.status !== "ok") {
         return {
           status: "error",
-          message: (result && result.message) || "failed to switch active orphan Codex Pet theme back to clawd",
+          message: (result && result.message) || `failed to switch active orphan Codex Pet theme back to ${fallbackThemeId}`,
           summary,
         };
       }
       switchedToFallback = true;
-      const cleanup = syncThemes("clawd");
+      const cleanup = syncThemes(fallbackThemeId);
       summary = mergeCodexPetSyncSummaries(summary, cleanup);
       lastSyncSummary = summary;
       if (cleanup.error) {

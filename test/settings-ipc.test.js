@@ -465,7 +465,7 @@ test("settings IPC opens the user themes directory", async () => {
   assert.deepStrictEqual(openCalls, ["C:\\Users\\Example\\AppData\\Roaming\\Clawd\\themes"]);
 });
 
-test("settings IPC imports Clawd user theme zip packages", async () => {
+test("settings IPC imports Hikari user theme zip packages", async () => {
   const root = makeTempDir();
   try {
     const userThemesDir = path.join(root, "user-themes");
@@ -519,7 +519,7 @@ test("settings IPC imports Clawd user theme zip packages", async () => {
     });
     assert.deepStrictEqual(dialogParent, { id: "parent", sender: "sender-web-contents" });
     assert.deepStrictEqual(dialogOptions.properties, ["openFile"]);
-    assert.deepStrictEqual(dialogOptions.filters, [{ name: "Clawd theme zip", extensions: ["zip"] }]);
+    assert.deepStrictEqual(dialogOptions.filters, [{ name: "Hikari theme zip", extensions: ["zip"] }]);
     assert.strictEqual(
       fs.readFileSync(path.join(userThemesDir, "pixel-cat", "theme.json"), "utf8"),
       JSON.stringify(themeJson)
@@ -528,6 +528,54 @@ test("settings IPC imports Clawd user theme zip packages", async () => {
       fs.readFileSync(path.join(userThemesDir, "pixel-cat", "assets", "working.gif"), "utf8"),
       "gif"
     );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("settings IPC rejects user theme zips that collide with built-in Hikari", async () => {
+  const root = makeTempDir();
+  try {
+    const userThemesDir = path.join(root, "user-themes");
+    const zipPath = path.join(root, "hikari.zip");
+    const themeJson = {
+      schemaVersion: 1,
+      name: "Fake Hikari",
+      version: "1.0.0",
+      sleepSequence: { mode: "direct" },
+      viewBox: { x: 0, y: 0, width: 16, height: 16 },
+      states: {
+        idle: ["idle.svg"],
+        working: { fallbackTo: "idle" },
+        thinking: { fallbackTo: "idle" },
+        sleeping: { fallbackTo: "idle" },
+      },
+    };
+    fs.writeFileSync(zipPath, makeZip([
+      { name: "hikari/theme.json", data: JSON.stringify(themeJson), method: 8 },
+      { name: "hikari/assets/idle.svg", data: "<svg></svg>", method: 8 },
+    ]));
+
+    const { ipcMain } = createHarness({
+      dialog: {
+        showOpenDialog: async () => ({ canceled: false, filePaths: [zipPath] }),
+        showMessageBox: async () => ({ response: 1 }),
+      },
+      themeLoader: {
+        getPreviewSoundUrl: () => null,
+        getSoundOverridesDir: () => null,
+        getSoundUrl: () => null,
+        listThemesWithMetadata: () => [],
+        getThemeMetadata: () => null,
+        ensureUserThemesDir: () => userThemesDir,
+      },
+    });
+
+    assert.deepStrictEqual(await ipcMain.invoke("settings:import-user-theme-zip"), {
+      status: "error",
+      message: 'theme id "hikari" is reserved',
+    });
+    assert.strictEqual(fs.existsSync(path.join(userThemesDir, "hikari")), false);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -663,11 +711,11 @@ test("settings IPC serves agent/about/update/external and remove-theme dialog he
     ]);
     assert.deepStrictEqual(await ipcMain.invoke("settings:get-about-info"), {
       version: "1.2.3",
-      repoUrl: "https://github.com/rullerzhou-afk/clawd-on-desk",
-      license: "AGPL-3.0",
-      copyright: "\u00a9 2026 Ruller_Lulu",
-      authorName: "Ruller_Lulu / \u9e7f\u9e7f",
-      authorUrl: "https://github.com/rullerzhou-afk",
+      repoUrl: "https://github.com/waifuverselabs/hikari-on-desk",
+      license: "AGPL-3.0-only",
+      copyright: "\u00a9 2026 waifuverselabs",
+      authorName: "waifuverselabs",
+      authorUrl: "https://github.com/waifuverselabs",
       heroSvgContent: "<svg id=\"hero\"></svg>",
       pendingUpdateVersion: "",
       autoUpdateCheck: true,

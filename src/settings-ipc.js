@@ -298,7 +298,7 @@ function registerSettingsIpc(options = {}) {
   handle("settings:list-themes", () => {
     try {
       const activeTheme = getActiveTheme();
-      const activeId = activeTheme ? activeTheme._id : "clawd";
+      const activeId = activeTheme ? activeTheme._id : (themeLoader.DEFAULT_THEME_ID || "hikari");
       return themeLoader.listThemesWithMetadata().map((theme) =>
         codexPetMain.decorateThemeMetadata({
           ...theme,
@@ -326,7 +326,7 @@ function registerSettingsIpc(options = {}) {
     try {
       result = await dialog.showOpenDialog(getDialogParent(event), {
         properties: ["openFile"],
-        filters: [{ name: "Clawd theme zip", extensions: ["zip"] }],
+        filters: [{ name: "Hikari theme zip", extensions: ["zip"] }],
       });
     } catch (err) {
       return { status: "error", message: `theme zip picker failed: ${err && err.message}` };
@@ -401,11 +401,11 @@ function registerSettingsIpc(options = {}) {
     } catch {}
     return {
       version: app.getVersion(),
-      repoUrl: "https://github.com/rullerzhou-afk/clawd-on-desk",
-      license: "AGPL-3.0",
-      copyright: "\u00a9 2026 Ruller_Lulu",
-      authorName: "Ruller_Lulu / \u9e7f\u9e7f",
-      authorUrl: "https://github.com/rullerzhou-afk",
+      repoUrl: "https://github.com/waifuverselabs/hikari-on-desk",
+      license: "AGPL-3.0-only",
+      copyright: "\u00a9 2026 waifuverselabs",
+      authorName: "waifuverselabs",
+      authorUrl: "https://github.com/waifuverselabs",
       heroSvgContent,
       pendingUpdateVersion,
       autoUpdateCheck,

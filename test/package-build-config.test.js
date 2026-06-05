@@ -8,7 +8,19 @@ const pkg = require("../package.json");
 const ROOT = path.join(__dirname, "..");
 
 function matchedByAnyGlob(globs, target) {
-  return globs.some((g) => minimatch(target, g));
+  return globs.some((g) => !g.startsWith("!") && minimatch(target, g, { dot: true }));
+}
+
+function includedByOrderedGlobs(globs, target) {
+  let included = false;
+  for (const glob of globs) {
+    if (glob.startsWith("!")) {
+      if (minimatch(target, glob.slice(1), { dot: true })) included = false;
+    } else if (minimatch(target, glob, { dot: true })) {
+      included = true;
+    }
+  }
+  return included;
 }
 
 describe("package build config", () => {
@@ -34,11 +46,34 @@ describe("package build config", () => {
   });
 
   it("unpacks built-in theme assets so the folder can be opened from settings", () => {
-    // Hikari ships APNG theme assets under themes/ (the upstream SVG-based
-    // assets/svg art was removed), so only themes/**/* needs unpacking.
+    // Theme folders need unpacking so Settings can open/copy them directly.
+    // Central SVG compatibility assets are packaged via build.files.
     assert.ok(
       pkg.build.asarUnpack.includes("themes/**/*"),
       "asarUnpack should include themes/**/*"
+    );
+  });
+
+  it("excludes source-only and backup theme files from packaged builds", () => {
+    assert.strictEqual(
+      includedByOrderedGlobs(pkg.build.files, "themes/hikari/assets/hikari-idle.apng"),
+      true,
+      "runtime theme assets should still ship"
+    );
+    assert.strictEqual(
+      includedByOrderedGlobs(pkg.build.files, "themes/hikari/source-sheets/hikari-idle.png"),
+      false,
+      "source sprite sheets should not ship in packaged builds"
+    );
+    assert.strictEqual(
+      includedByOrderedGlobs(pkg.build.files, "themes/hikari/original-calico-backup-20260604-100447/theme.json"),
+      false,
+      "backup theme folders should not ship in packaged builds"
+    );
+    assert.strictEqual(
+      includedByOrderedGlobs(pkg.build.files, "themes/hikari/.DS_Store"),
+      false,
+      "macOS metadata files should not ship in packaged builds"
     );
   });
 

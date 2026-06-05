@@ -1,5 +1,6 @@
 const { describe, it, beforeEach, mock } = require("node:test");
 const assert = require("node:assert");
+const pkg = require("../package.json");
 
 let initUpdater = require("../src/updater");
 
@@ -124,6 +125,16 @@ describe("updater visual flow", () => {
     mock.restoreAll();
     delete require.cache[require.resolve("../src/updater")];
     initUpdater = require("../src/updater");
+  });
+
+  it("targets the configured GitHub release repository", () => {
+    const publish = (pkg.build.publish || []).find((entry) => entry && entry.provider === "github");
+    assert.ok(publish, "package publish config should include a GitHub target");
+    assert.strictEqual(initUpdater.__test.RELEASES_REPO, `${publish.owner}/${publish.repo}`);
+    assert.strictEqual(
+      initUpdater.__test.RELEASES_LATEST_URL,
+      `https://github.com/${publish.owner}/${publish.repo}/releases/latest`
+    );
   });
 
   it("shows checking state and up-to-date bubble when latest version matches", async () => {
@@ -385,7 +396,7 @@ describe("updater visual flow", () => {
     assert.deepStrictEqual(visualStates, ["checking", null]);
     assert.ok(appliedStates.includes("error"));
     assert.deepStrictEqual(requests, [
-      "api.github.com/repos/rullerzhou-afk/clawd-on-desk/releases/latest",
+      "api.github.com/repos/waifuverselabs/hikari-on-desk/releases/latest",
     ]);
     assert.deepStrictEqual(bubbles.map((bubble) => bubble.mode), ["checking", "error"]);
     assert.match(bubbles[1].detail, /Operation: Check for Updates/);
@@ -412,7 +423,7 @@ describe("updater visual flow", () => {
         {
           statusCode: 302,
           headers: {
-            location: "https://github.com/rullerzhou-afk/clawd-on-desk/releases/tag/v0.5.10",
+            location: "https://github.com/waifuverselabs/hikari-on-desk/releases/tag/v0.5.10",
           },
         },
       ], requests),
@@ -421,8 +432,8 @@ describe("updater visual flow", () => {
     await updater.checkForUpdates(true);
 
     assert.deepStrictEqual(requests, [
-      "api.github.com/repos/rullerzhou-afk/clawd-on-desk/releases/latest",
-      "github.com/rullerzhou-afk/clawd-on-desk/releases/latest",
+      "api.github.com/repos/waifuverselabs/hikari-on-desk/releases/latest",
+      "github.com/waifuverselabs/hikari-on-desk/releases/latest",
     ]);
     assert.deepStrictEqual(bubbles.map((bubble) => bubble.mode), ["checking", "up-to-date"]);
   });
@@ -460,7 +471,7 @@ describe("updater visual flow", () => {
         {
           statusCode: 302,
           headers: {
-            location: "https://github.com/rullerzhou-afk/clawd-on-desk/releases/tag/v0.5.11",
+            location: "https://github.com/waifuverselabs/hikari-on-desk/releases/tag/v0.5.11",
           },
         },
       ], requests),
@@ -472,8 +483,8 @@ describe("updater visual flow", () => {
 
     assert.strictEqual(updateChecks, 1);
     assert.deepStrictEqual(requests, [
-      "api.github.com/repos/rullerzhou-afk/clawd-on-desk/releases/latest",
-      "github.com/rullerzhou-afk/clawd-on-desk/releases/latest",
+      "api.github.com/repos/waifuverselabs/hikari-on-desk/releases/latest",
+      "github.com/waifuverselabs/hikari-on-desk/releases/latest",
     ]);
     assert.deepStrictEqual(bubbles.map((bubble) => bubble.mode), ["checking", "available"]);
   });
@@ -502,8 +513,8 @@ describe("updater visual flow", () => {
     await updater.checkForUpdates(true);
 
     assert.deepStrictEqual(requests, [
-      "api.github.com/repos/rullerzhou-afk/clawd-on-desk/releases/latest",
-      "github.com/rullerzhou-afk/clawd-on-desk/releases/latest",
+      "api.github.com/repos/waifuverselabs/hikari-on-desk/releases/latest",
+      "github.com/waifuverselabs/hikari-on-desk/releases/latest",
     ]);
     assert.deepStrictEqual(bubbles.map((bubble) => bubble.mode), ["checking", "error"]);
     assert.match(bubbles[1].detail, /GitHub releases redirect returned 200/);
@@ -524,7 +535,7 @@ describe("updater visual flow", () => {
     await updater.checkForUpdates(true);
 
     assert.deepStrictEqual(requests, [
-      "api.github.com/repos/rullerzhou-afk/clawd-on-desk/releases/latest",
+      "api.github.com/repos/waifuverselabs/hikari-on-desk/releases/latest",
     ]);
     assert.deepStrictEqual(bubbles.map((bubble) => bubble.mode), ["checking", "error"]);
     assert.match(bubbles[1].detail, /Reason: No releases found/);
@@ -542,6 +553,7 @@ describe("updater visual flow", () => {
       },
     });
     const updater = initUpdater(ctx, makeDeps({
+      platform: "win32",
       autoUpdaterFactory: () => ({
         autoDownload: false,
         autoInstallOnAppQuit: true,
@@ -708,7 +720,7 @@ describe("updater visual flow", () => {
         {
           statusCode: 302,
           headers: {
-            location: "https://github.com/rullerzhou-afk/clawd-on-desk/releases/tag/v0.6.1",
+            location: "https://github.com/waifuverselabs/hikari-on-desk/releases/tag/v0.6.1",
           },
         },
       ], requests),
@@ -717,8 +729,8 @@ describe("updater visual flow", () => {
     await updater.checkForUpdates(true);
 
     assert.deepStrictEqual(requests, [
-      "api.github.com/repos/rullerzhou-afk/clawd-on-desk/releases/latest",
-      "github.com/rullerzhou-afk/clawd-on-desk/releases/latest",
+      "api.github.com/repos/waifuverselabs/hikari-on-desk/releases/latest",
+      "github.com/waifuverselabs/hikari-on-desk/releases/latest",
     ]);
     assert.deepStrictEqual(openedUrls, []);
     assert.deepStrictEqual(bubbles.map((bubble) => bubble.mode), ["checking", "up-to-date"]);
@@ -770,7 +782,7 @@ describe("updater visual flow", () => {
         {
           statusCode: 302,
           headers: {
-            location: "https://github.com/rullerzhou-afk/clawd-on-desk/releases/tag/v0.6.1",
+            location: "https://github.com/waifuverselabs/hikari-on-desk/releases/tag/v0.6.1",
           },
         },
       ], requests),
@@ -780,8 +792,8 @@ describe("updater visual flow", () => {
 
     assert.strictEqual(updateChecks, 1);
     assert.deepStrictEqual(requests, [
-      "api.github.com/repos/rullerzhou-afk/clawd-on-desk/releases/latest",
-      "github.com/rullerzhou-afk/clawd-on-desk/releases/latest",
+      "api.github.com/repos/waifuverselabs/hikari-on-desk/releases/latest",
+      "github.com/waifuverselabs/hikari-on-desk/releases/latest",
     ]);
     assert.deepStrictEqual(openedUrls, []);
     assert.deepStrictEqual(bubbles.map((bubble) => bubble.mode), ["checking"]);
@@ -1014,7 +1026,7 @@ describe("updater visual flow", () => {
       await handlers["update-available"]({ version: "0.5.11" });
 
       assert.deepStrictEqual(bubbles.map((bubble) => bubble.mode), ["checking", "available", "ready"]);
-      assert.strictEqual(openedUrls[0], "https://github.com/rullerzhou-afk/clawd-on-desk/releases/latest");
+      assert.strictEqual(openedUrls[0], "https://github.com/waifuverselabs/hikari-on-desk/releases/latest");
       assert.match(bubbles[2].message, /opened/i);
     } finally {
       Object.defineProperty(process, "platform", { value: originalPlatform });

@@ -489,14 +489,14 @@ codexPetMain = createCodexPetMain({
 });
 const REGISTER_PROTOCOL_DEV_ARG = codexPetMain.REGISTER_PROTOCOL_DEV_ARG;
 // Lenient load so a missing/corrupt user-selected theme can't brick boot.
-// If lenient fell back to "clawd" OR the variant fell back to "default",
+// If lenient fell back to the default theme OR the variant fell back to "default",
 // hydrate prefs to match so the store stays truth.
 //
 // Startup runs BEFORE the window is ready, so we call the runtime's initial
 // load path, not activateTheme (which requires ready windows) and not the
 // setThemeSelection command (which goes through activateTheme). The runtime
 // switch path via UI goes through setThemeSelection post-window-ready.
-let _requestedThemeId = _settingsController.get("theme") || "clawd";
+let _requestedThemeId = _settingsController.get("theme") || themeLoader.DEFAULT_THEME_ID;
 const _initialVariantMap = _settingsController.get("themeVariant") || {};
 let _requestedVariantId = _initialVariantMap[_requestedThemeId] || "default";
 const _initialThemeOverrides = _settingsController.get("themeOverrides") || {};
@@ -509,7 +509,7 @@ if (codexPetMain.summaryHasActiveOrphan(_startupCodexPetSyncSummary, _requestedT
   delete nextVariantMap[orphanThemeId];
   delete nextOverrides[orphanThemeId];
 
-  _requestedThemeId = "clawd";
+  _requestedThemeId = themeLoader.DEFAULT_THEME_ID;
   _requestedVariantId = nextVariantMap[_requestedThemeId] || "default";
   _requestedThemeOverrides = nextOverrides[_requestedThemeId] || null;
   const result = _settingsController.hydrate({
@@ -2631,7 +2631,7 @@ const _menuCtx = {
   getNearestWorkArea,
   reapplyMacVisibility,
   discoverThemes: () => themeLoader.discoverThemes(),
-  getActiveThemeId: () => themeRuntime.getActiveThemeId("clawd"),
+  getActiveThemeId: () => themeRuntime.getActiveThemeId(themeLoader.DEFAULT_THEME_ID),
   getActiveThemeCapabilities: () => themeRuntime.getActiveThemeCapabilities(),
   ensureUserThemesDir: () => themeLoader.ensureUserThemesDir(),
   openSettingsWindow: () => settingsWindowRuntime.open(),

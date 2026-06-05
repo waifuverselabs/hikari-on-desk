@@ -4,8 +4,11 @@ const path = require("path");
 const fs = require("fs");
 const electron = require("electron");
 
-const isMac = process.platform === "darwin";
-const RELEASES_LATEST_URL = "https://github.com/rullerzhou-afk/clawd-on-desk/releases/latest";
+const RELEASES_REPO = "waifuverselabs/hikari-on-desk";
+const RELEASES_USER_AGENT = "Hikari-on-Desk";
+const RELEASES_LATEST_PATH = `/${RELEASES_REPO}/releases/latest`;
+const RELEASES_API_LATEST_PATH = `/repos/${RELEASES_REPO}/releases/latest`;
+const RELEASES_LATEST_URL = `https://github.com/${RELEASES_REPO}/releases/latest`;
 
 function makeTranslate(ctx) {
   return (key, fallback) => {
@@ -97,6 +100,7 @@ function initUpdater(ctx, deps = {}) {
   const t = makeTranslate(ctx);
   const runtimePlatform = deps.platform || process.platform;
   const runtimeArch = deps.arch || process.arch;
+  const isRuntimeMac = runtimePlatform === "darwin";
 
   let updateStatus = "idle";
   // activeCheck carries the current in-flight check context. trigger:
@@ -476,9 +480,9 @@ function initUpdater(ctx, deps = {}) {
     return new Promise((resolve, reject) => {
       const req = httpsGet({
         hostname: "github.com",
-        path: "/rullerzhou-afk/clawd-on-desk/releases/latest",
+        path: RELEASES_LATEST_PATH,
         headers: {
-          "User-Agent": "Clawd-on-Desk",
+          "User-Agent": RELEASES_USER_AGENT,
           Accept: "text/html,*/*",
         },
       }, (res) => {
@@ -509,11 +513,11 @@ function initUpdater(ctx, deps = {}) {
 
   function fetchLatestReleaseFromApi() {
     return new Promise((resolve, reject) => {
-      const headers = { "User-Agent": "Clawd-on-Desk" };
+      const headers = { "User-Agent": RELEASES_USER_AGENT };
       if (lastReleaseEtag) headers["If-None-Match"] = lastReleaseEtag;
       const req = httpsGet({
         hostname: "api.github.com",
-        path: "/repos/rullerzhou-afk/clawd-on-desk/releases/latest",
+        path: RELEASES_API_LATEST_PATH,
         headers,
       }, (res) => {
         // 304 Not Modified — drain and serve the cached release.
@@ -634,7 +638,7 @@ function initUpdater(ctx, deps = {}) {
     // pet does not get stuck masking working/thinking.
     pulseState("notification");
 
-    const isMacUi = process.platform === "darwin";
+    const isMacUi = isRuntimeMac;
     const primaryLabel = isMacUi ? t("download", "Download") : t("updateNow", "Update Now");
     const messageKey = isMacUi
       ? t("updateAvailableMacMsg", "v{version} is available. Open the download page?")
@@ -845,7 +849,7 @@ function initUpdater(ctx, deps = {}) {
           execFileFn("npm", ["install", "--no-fund", "--no-audit"], {
             cwd: repoRoot,
             timeout: 120000,
-            shell: process.platform === "win32",
+            shell: runtimePlatform === "win32",
           }, (err) => (err ? reject(err) : resolve()));
         });
       } catch (err) {
@@ -1053,7 +1057,7 @@ function initUpdater(ctx, deps = {}) {
       rebuildMenus();
 
       const onPrimary = async () => {
-        if (isMac) {
+        if (isRuntimeMac) {
           shell.openExternal(RELEASES_LATEST_URL);
           updateStatus = "idle";
           clearActiveCheck();
@@ -1093,7 +1097,7 @@ function initUpdater(ctx, deps = {}) {
       }
 
       await promptAvailableUpdate({
-        mode: isMac ? "mac" : "win",
+        mode: isRuntimeMac ? "mac" : "win",
         version: info.version,
         onPrimary,
       });
@@ -1348,5 +1352,10 @@ module.exports.__test = {
   findWindowsArm64InstallerAsset,
   formatVersionForMessage,
   isUpdate404Error,
+  RELEASES_API_LATEST_PATH,
+  RELEASES_LATEST_PATH,
+  RELEASES_LATEST_URL,
+  RELEASES_REPO,
+  RELEASES_USER_AGENT,
   shouldPromptNativeArm64,
 };

@@ -213,6 +213,76 @@ describe("mini mode entry timing", () => {
   });
 });
 
+describe("mini mode snap taskbar side insets", () => {
+  let loader;
+
+  beforeEach(() => {
+    mock.timers.enable({ apis: ["setTimeout", "Date"] });
+  });
+
+  afterEach(() => {
+    if (loader) loader.restore();
+    mock.timers.reset();
+    loader = null;
+  });
+
+  it("does not snap to mini at a right-side Dock/taskbar workArea boundary", () => {
+    loader = loadMiniWithElectron({
+      getAllDisplays() {
+        return [{
+          bounds: { x: 0, y: 0, width: 800, height: 600 },
+          workArea: { x: 0, y: 0, width: 760, height: 600 },
+        }];
+      },
+    });
+    const stateLog = [];
+    const ctx = makeCtx(cloneTheme(_defaultTheme), stateLog, 650);
+    const mini = loader.initMini(ctx);
+
+    mini.checkMiniModeSnap();
+
+    assert.equal(mini.getMiniMode(), false);
+    assert.deepStrictEqual(stateLog, []);
+  });
+
+  it("does not snap to mini at a left-side Dock/taskbar workArea boundary", () => {
+    loader = loadMiniWithElectron({
+      getAllDisplays() {
+        return [{
+          bounds: { x: 0, y: 0, width: 800, height: 600 },
+          workArea: { x: 40, y: 0, width: 760, height: 600 },
+        }];
+      },
+    });
+    const stateLog = [];
+    const ctx = makeCtx(cloneTheme(_defaultTheme), stateLog, 40);
+    const mini = loader.initMini(ctx);
+
+    mini.checkMiniModeSnap();
+
+    assert.equal(mini.getMiniMode(), false);
+    assert.deepStrictEqual(stateLog, []);
+  });
+
+  it("still snaps to mini at a physical side edge when only the bottom taskbar is inset", () => {
+    loader = loadMiniWithElectron({
+      getAllDisplays() {
+        return [{
+          bounds: { x: 0, y: 0, width: 800, height: 600 },
+          workArea: { x: 0, y: 0, width: 800, height: 560 },
+        }];
+      },
+    });
+    const ctx = makeCtx(cloneTheme(_defaultTheme), [], 700);
+    const mini = loader.initMini(ctx);
+
+    mini.checkMiniModeSnap();
+
+    assert.equal(mini.getMiniMode(), true);
+    assert.equal(mini.getMiniEdge(), "right");
+  });
+});
+
 // Two displays tiled side by side: D1 [0,800) and D2 [800,1600), same height.
 const SIDE_BY_SIDE = [
   { bounds: { x: 0, y: 0, width: 800, height: 600 }, workArea: { x: 0, y: 0, width: 800, height: 600 } },

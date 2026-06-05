@@ -188,9 +188,13 @@ if (raw.eyeTracking && raw.eyeTracking.enabled) {
 // ── 2. Asset file existence ──
 console.log(`\n${C}[Assets]${D}`);
 
-const assetsDir = assetsOverride ? path.resolve(assetsOverride) : path.join(resolvedDir, "assets");
+const themeAssetsDir = path.join(resolvedDir, "assets");
+const centralAssetsDir = path.resolve(__dirname, "..", "assets", "svg");
+const assetsDir = assetsOverride
+  ? path.resolve(assetsOverride)
+  : (fs.existsSync(themeAssetsDir) ? themeAssetsDir : centralAssetsDir);
 const assetsDirExists = fs.existsSync(assetsDir);
-check(assetsDirExists, `assets/ directory exists`);
+check(assetsDirExists, assetsDir === themeAssetsDir ? `assets/ directory exists` : `central assets/svg directory exists`);
 
 /** Collect all referenced asset filenames */
 function collectFiles() {

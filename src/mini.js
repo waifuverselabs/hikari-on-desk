@@ -7,6 +7,7 @@ module.exports = function initMini(ctx) {
 
 const PEEK_OFFSET = 25;
 const SNAP_TOLERANCE = 30;
+const SIDE_EDGE_TOLERANCE = 4;
 const JUMP_PEAK_HEIGHT = 40;
 const JUMP_DURATION = 350;
 const MINI_ENTER_FALLBACK_MS = 3200;
@@ -268,6 +269,25 @@ function _getSize() {
   return ctx.getCurrentPixelSize ? ctx.getCurrentPixelSize() : ctx.SIZES[ctx.currentSize];
 }
 
+function getPhysicalSideSnapEdge(display, edge) {
+  const wa = display && display.workArea;
+  if (!wa) return null;
+  const workAreaEdge = edge === "right" ? wa.x + wa.width : wa.x;
+  if (!Number.isFinite(workAreaEdge)) return null;
+
+  const bounds = display.bounds;
+  if (!bounds) return workAreaEdge;
+  const physicalEdge = edge === "right" ? bounds.x + bounds.width : bounds.x;
+  if (!Number.isFinite(physicalEdge)) return null;
+
+  // A side Dock/taskbar shrinks workArea, but that boundary is not a screen
+  // edge. Let drag-end clamping handle it like the bottom taskbar instead of
+  // entering side-peek mini mode.
+  return Math.abs(workAreaEdge - physicalEdge) <= SIDE_EDGE_TOLERANCE
+    ? workAreaEdge
+    : null;
+}
+
 function checkMiniModeSnap() {
   if (!themeSupportsMini()) return;
   if (miniMode) return;
@@ -282,16 +302,22 @@ function checkMiniModeSnap() {
     if (centerX < wa.x || centerX > wa.x + wa.width) continue;
     if (centerY < wa.y || centerY > wa.y + wa.height) continue;
     // Right edge snap
-    const rightLimit = wa.x + wa.width - size.width + mEdge;
-    if (bounds.x >= rightLimit - SNAP_TOLERANCE) {
-      enterMiniMode(wa, false, "right");
-      return;
+    const rightEdge = getPhysicalSideSnapEdge(d, "right");
+    if (rightEdge != null) {
+      const rightLimit = rightEdge - size.width + mEdge;
+      if (bounds.x >= rightLimit - SNAP_TOLERANCE) {
+        enterMiniMode(wa, false, "right");
+        return;
+      }
     }
     // Left edge snap
-    const leftLimit = wa.x - mEdge;
-    if (bounds.x <= leftLimit + SNAP_TOLERANCE) {
-      enterMiniMode(wa, false, "left");
-      return;
+    const leftEdge = getPhysicalSideSnapEdge(d, "left");
+    if (leftEdge != null) {
+      const leftLimit = leftEdge - mEdge;
+      if (bounds.x <= leftLimit + SNAP_TOLERANCE) {
+        enterMiniMode(wa, false, "left");
+        return;
+      }
     }
   }
 }

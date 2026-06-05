@@ -133,6 +133,7 @@
       "assets/icon.ico",
       "assets/icons/**/*",
       "assets/icons/agents/**/*",
+      "assets/svg/**/*",
       "assets/sounds/**/*",
       "assets/icon.png",
       "assets/dock-icon.png",
@@ -141,6 +142,9 @@
       "extensions/**/*",
       "agents/**/*",
       "themes/**/*",
+      "!themes/**/.DS_Store",
+      "!themes/**/source-sheets/**/*",
+      "!themes/**/*backup*/**/*",
       "pwa/**/*"
     ],
     "asarUnpack": [
