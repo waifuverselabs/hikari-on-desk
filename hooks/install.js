@@ -63,6 +63,10 @@ const UNKNOWN_CLAUDE_VERSION = Object.freeze({
 let cachedClaudeVersionInfo = null;
 let cachedClaudeVersionPromise = null;
 
+function pathApiForPlatform(platform = process.platform) {
+  return platform === "win32" ? path.win32 : path.posix;
+}
+
 /**
  * Compare two semver strings: return true if a < b.
  */
@@ -106,6 +110,7 @@ function getWindowsClaudePathSuffixes(pathExtEnv) {
 
 function getClaudePathCandidates(options = {}) {
   const platform = options.platform || process.platform;
+  const pathApi = pathApiForPlatform(platform);
   const pathEnv = options.pathEnv !== undefined ? options.pathEnv : process.env.PATH;
   const existsSync = options.existsSync || fs.existsSync;
 
@@ -124,7 +129,7 @@ function getClaudePathCandidates(options = {}) {
     if (!dir) continue;
 
     for (const suffix of suffixes) {
-      const candidate = path.join(dir, `claude${suffix}`);
+      const candidate = pathApi.join(dir, `claude${suffix}`);
       const key = platform === "win32" ? candidate.toLowerCase() : candidate;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -140,6 +145,7 @@ function getClaudePathCandidates(options = {}) {
 
 async function getClaudePathCandidatesAsync(options = {}) {
   const platform = options.platform || process.platform;
+  const pathApi = pathApiForPlatform(platform);
   const pathEnv = options.pathEnv !== undefined ? options.pathEnv : process.env.PATH;
   const access = options.access || fs.promises.access.bind(fs.promises);
 
@@ -158,7 +164,7 @@ async function getClaudePathCandidatesAsync(options = {}) {
     if (!dir) continue;
 
     for (const suffix of suffixes) {
-      const candidate = path.join(dir, `claude${suffix}`);
+      const candidate = pathApi.join(dir, `claude${suffix}`);
       const key = platform === "win32" ? candidate.toLowerCase() : candidate;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -175,12 +181,13 @@ async function getClaudePathCandidatesAsync(options = {}) {
 
 function getClaudePackageJsonCandidates(candidatePath, options = {}) {
   const platform = options.platform || process.platform;
+  const pathApi = pathApiForPlatform(platform);
   const existsSync = options.existsSync || fs.existsSync;
   const readFileSync = options.readFileSync || fs.readFileSync;
   const realpathSync = options.realpathSync || fs.realpathSync;
   const statSync = options.statSync || fs.statSync;
 
-  if (!path.isAbsolute(candidatePath)) return [];
+  if (!pathApi.isAbsolute(candidatePath)) return [];
 
   const candidates = [];
   const seen = new Set();
@@ -195,12 +202,12 @@ function getClaudePackageJsonCandidates(candidatePath, options = {}) {
     } catch {}
   };
 
-  const candidateDir = path.dirname(candidatePath);
-  addCandidate(path.join(candidateDir, ...CLAUDE_PACKAGE_JSON_SEGMENTS));
+  const candidateDir = pathApi.dirname(candidatePath);
+  addCandidate(pathApi.join(candidateDir, ...CLAUDE_PACKAGE_JSON_SEGMENTS));
 
   try {
     const resolvedPath = realpathSync(candidatePath);
-    addCandidate(path.join(path.dirname(resolvedPath), "package.json"));
+    addCandidate(pathApi.join(pathApi.dirname(resolvedPath), "package.json"));
   } catch {}
 
   try {
@@ -211,8 +218,8 @@ function getClaudePackageJsonCandidates(candidatePath, options = {}) {
       const shimSource = readFileSync(candidatePath, "utf8");
       const shimMatch = shimSource.match(CLAUDE_SHIM_CLI_PATTERN);
       if (shimMatch) {
-        const cliPath = path.resolve(candidateDir, shimMatch[0].replace(/[\\/]/g, path.sep));
-        addCandidate(path.join(path.dirname(cliPath), "package.json"));
+        const cliPath = pathApi.resolve(candidateDir, shimMatch[0].replace(/[\\/]/g, pathApi.sep));
+        addCandidate(pathApi.join(pathApi.dirname(cliPath), "package.json"));
       }
     }
   } catch {}
@@ -222,12 +229,13 @@ function getClaudePackageJsonCandidates(candidatePath, options = {}) {
 
 async function getClaudePackageJsonCandidatesAsync(candidatePath, options = {}) {
   const platform = options.platform || process.platform;
+  const pathApi = pathApiForPlatform(platform);
   const access = options.access || fs.promises.access.bind(fs.promises);
   const readFile = options.readFile || fs.promises.readFile.bind(fs.promises);
   const realpath = options.realpath || fs.promises.realpath.bind(fs.promises);
   const stat = options.stat || fs.promises.stat.bind(fs.promises);
 
-  if (!path.isAbsolute(candidatePath)) return [];
+  if (!pathApi.isAbsolute(candidatePath)) return [];
 
   const candidates = [];
   const seen = new Set();
@@ -243,12 +251,12 @@ async function getClaudePackageJsonCandidatesAsync(candidatePath, options = {}) 
     } catch {}
   };
 
-  const candidateDir = path.dirname(candidatePath);
-  await addCandidate(path.join(candidateDir, ...CLAUDE_PACKAGE_JSON_SEGMENTS));
+  const candidateDir = pathApi.dirname(candidatePath);
+  await addCandidate(pathApi.join(candidateDir, ...CLAUDE_PACKAGE_JSON_SEGMENTS));
 
   try {
     const resolvedPath = await realpath(candidatePath);
-    await addCandidate(path.join(path.dirname(resolvedPath), "package.json"));
+    await addCandidate(pathApi.join(pathApi.dirname(resolvedPath), "package.json"));
   } catch {}
 
   try {
@@ -258,8 +266,8 @@ async function getClaudePackageJsonCandidatesAsync(candidatePath, options = {}) 
       const shimSource = await readFile(candidatePath, "utf8");
       const shimMatch = String(shimSource).match(CLAUDE_SHIM_CLI_PATTERN);
       if (shimMatch) {
-        const cliPath = path.resolve(candidateDir, shimMatch[0].replace(/[\\/]/g, path.sep));
-        await addCandidate(path.join(path.dirname(cliPath), "package.json"));
+        const cliPath = pathApi.resolve(candidateDir, shimMatch[0].replace(/[\\/]/g, pathApi.sep));
+        await addCandidate(pathApi.join(pathApi.dirname(cliPath), "package.json"));
       }
     }
   } catch {}
