@@ -34,10 +34,8 @@ describe("package build config", () => {
   });
 
   it("unpacks built-in theme assets so the folder can be opened from settings", () => {
-    assert.ok(
-      pkg.build.asarUnpack.includes("assets/svg/**/*"),
-      "asarUnpack should include assets/svg/**/*"
-    );
+    // Hikari ships APNG theme assets under themes/ (the upstream SVG-based
+    // assets/svg art was removed), so only themes/**/* needs unpacking.
     assert.ok(
       pkg.build.asarUnpack.includes("themes/**/*"),
       "asarUnpack should include themes/**/*"
