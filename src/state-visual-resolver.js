@@ -40,6 +40,12 @@ function pickStateFile(files, randomFn = Math.random) {
   return files[Math.floor(random() * files.length)];
 }
 
+function getTierFiles(tier) {
+  if (!tier || typeof tier !== "object") return [];
+  if (Array.isArray(tier.files) && tier.files.length > 0) return tier.files;
+  return typeof tier.file === "string" && tier.file ? [tier.file] : [];
+}
+
 function hasOwnVisualFiles(stateBindings, state) {
   const entry = stateBindings && stateBindings[state];
   return !!(entry && Array.isArray(entry.files) && entry.files.length > 0);
@@ -82,10 +88,11 @@ function countActiveSessionsByStates(sessions, states) {
   return count;
 }
 
-function selectTieredStateFile(tiers, count, fallbackFile) {
+function selectTieredStateFile(tiers, count, fallbackFile, options = {}) {
+  const pickFile = typeof options.pickStateFile === "function" ? options.pickStateFile : pickStateFile;
   if (tiers) {
     for (const tier of tiers) {
-      if (count >= tier.minSessions) return tier.file;
+      if (count >= tier.minSessions) return pickFile(getTierFiles(tier)) || fallbackFile;
     }
   }
   return fallbackFile;
@@ -100,7 +107,8 @@ function getWorkingSvg(options = {}) {
   return selectTieredStateFile(
     options.theme && options.theme.workingTiers,
     count,
-    stateSvgs.working[0]
+    stateSvgs.working[0],
+    { pickStateFile: options.pickStateFile }
   );
 }
 
@@ -113,11 +121,18 @@ function getJugglingSvg(options = {}) {
   return selectTieredStateFile(
     options.theme && options.theme.jugglingTiers,
     count,
-    stateSvgs.juggling[0]
+    stateSvgs.juggling[0],
+    { pickStateFile: options.pickStateFile }
   );
 }
 
-function getWinningSessionDisplayHint(sessions, targetState, displayHintMap = {}) {
+function resolveFilePool(value, pickFile) {
+  if (Array.isArray(value)) return pickFile(value);
+  return typeof value === "string" && value ? value : null;
+}
+
+function getWinningSessionDisplayHint(sessions, targetState, displayHintMap = {}, options = {}) {
+  const pickFile = typeof options.pickStateFile === "function" ? options.pickStateFile : pickStateFile;
   let best = null;
   let bestAt = -1;
   for (const [, session] of normalizeSessionsIterable(sessions)) {
@@ -129,7 +144,7 @@ function getWinningSessionDisplayHint(sessions, targetState, displayHintMap = {}
   }
   if (!best || !best.displayHint) return null;
   const resolved = displayHintMap[best.displayHint];
-  return resolved || null;
+  return resolveFilePool(resolved, pickFile);
 }
 
 function getSvgOverride(state, options = {}) {
@@ -138,17 +153,23 @@ function getSvgOverride(state, options = {}) {
   }
   if (state === "idle") return options.idleFollowSvg;
   if (state === "working") {
-    const hinted = getWinningSessionDisplayHint(options.sessions, "working", options.displayHintMap);
+    const hinted = getWinningSessionDisplayHint(options.sessions, "working", options.displayHintMap, {
+      pickStateFile: options.pickStateFile,
+    });
     if (hinted) return hinted;
     return getWorkingSvg(options);
   }
   if (state === "juggling") {
-    const hinted = getWinningSessionDisplayHint(options.sessions, "juggling", options.displayHintMap);
+    const hinted = getWinningSessionDisplayHint(options.sessions, "juggling", options.displayHintMap, {
+      pickStateFile: options.pickStateFile,
+    });
     if (hinted) return hinted;
     return getJugglingSvg(options);
   }
   if (state === "thinking") {
-    const hinted = getWinningSessionDisplayHint(options.sessions, "thinking", options.displayHintMap);
+    const hinted = getWinningSessionDisplayHint(options.sessions, "thinking", options.displayHintMap, {
+      pickStateFile: options.pickStateFile,
+    });
     if (hinted) return hinted;
     const stateSvgs = options.stateSvgs;
     return stateSvgs.thinking[0];
@@ -162,7 +183,9 @@ module.exports = {
   hasOwnVisualFiles,
   resolveVisualBinding,
   countActiveSessionsByStates,
+  getTierFiles,
   selectTieredStateFile,
+  resolveFilePool,
   getWorkingSvg,
   getJugglingSvg,
   getWinningSessionDisplayHint,

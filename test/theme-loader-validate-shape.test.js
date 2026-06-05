@@ -137,6 +137,27 @@ describe("validateThemeShape", () => {
     assert.ok(result.errors.some((error) => error.includes("missing.svg")));
   });
 
+  it("reports missing assets introduced by variant tier file pools", () => {
+    makeFixture({
+      builtinThemes: [{
+        id: "clawd",
+        json: validThemeJson({
+          name: "Clawd",
+          variants: {
+            broken: {
+              jugglingTiers: [{ minSessions: 1, files: ["working.svg", "missing-hula.svg"] }],
+            },
+          },
+        }),
+      }],
+    });
+
+    const result = themeLoader.validateThemeShape("clawd", { variant: "broken" });
+
+    assert.strictEqual(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("missing-hula.svg")));
+  });
+
   it("reports override-introduced missing assets", () => {
     makeFixture({
       builtinThemes: [{ id: "clawd", json: validThemeJson({ name: "Clawd" }) }],

@@ -195,6 +195,13 @@ check(assetsDirExists, `assets/ directory exists`);
 /** Collect all referenced asset filenames */
 function collectFiles() {
   const files = new Set();
+  const addFilePool = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach((f) => { if (f) files.add(f); });
+    } else if (value) {
+      files.add(value);
+    }
+  };
   // States
   if (raw.states) {
     for (const [key, entry] of Object.entries(raw.states)) {
@@ -212,13 +219,13 @@ function collectFiles() {
   // Working tiers
   if (raw.workingTiers) {
     for (const tier of raw.workingTiers) {
-      if (tier.file) files.add(tier.file);
+      addFilePool(Array.isArray(tier.files) && tier.files.length > 0 ? tier.files : tier.file);
     }
   }
   // Juggling tiers
   if (raw.jugglingTiers) {
     for (const tier of raw.jugglingTiers) {
-      if (tier.file) files.add(tier.file);
+      addFilePool(Array.isArray(tier.files) && tier.files.length > 0 ? tier.files : tier.file);
     }
   }
   // Idle animations
@@ -240,7 +247,7 @@ function collectFiles() {
   // Display hint map values
   if (raw.displayHintMap) {
     for (const f of Object.values(raw.displayHintMap)) {
-      if (f) files.add(f);
+      addFilePool(f);
     }
   }
   return files;

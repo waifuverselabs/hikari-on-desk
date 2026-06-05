@@ -7,7 +7,7 @@
 //      older than monitor start. Only helps lines that carry a timestamp.
 //   2. File-level: _pollFile sets tracked.backfilling when attaching to a
 //      file whose mtime predates monitor start. _processLine then suppresses
-//      historical emits + deferred timers until the first read drains, then
+//      historical emits until the first read drains, then
 //      _emitBackfillSnapshot may synthesize ONE current sustained state
 //      (thinking / working / codex-permission). Works for any line shape,
 //      covers what layer 1 can't.
@@ -24,7 +24,6 @@ const {
   extractAssistantTextFromRecord,
 } = require("../hooks/codex-assistant-output");
 
-const APPROVAL_HEURISTIC_MS = 2000;
 const MAX_TRACKED_FILES = 50;
 const MAX_RETIRED_TRACKED_FILES = 100;
 const MAX_PARTIAL_BYTES = 65536;
@@ -88,9 +87,6 @@ class CodexLogMonitor {
     if (this._interval) {
       clearInterval(this._interval);
       this._interval = null;
-    }
-    for (const tracked of this._tracked.values()) {
-      if (tracked.approvalTimer) clearTimeout(tracked.approvalTimer);
     }
     this._tracked.clear();
     this._retiredTracked.clear();
@@ -410,19 +406,15 @@ class CodexLogMonitor {
       tracked.sessionTitle = threadName;
     }
 
-    // Approval heuristic: exec_command_end / function_call_output means command finished.
-    // guardian_assessment is Codex Desktop auto-review approving or checking the shell
-    // call before it runs; once present, the shell is not waiting on the user-facing
-    // approval prompt this heuristic is trying to infer.
+    // exec_command_end / function_call_output means command finished.
+    // guardian_assessment is Codex Desktop auto-review approving or checking the
+    // shell call before it runs; once present, the shell is not waiting on a
+    // user-facing approval prompt.
     if (
       key === "event_msg:exec_command_end"
       || key === "response_item:function_call_output"
       || this._isGuardianApprovalActivity(payload)
     ) {
-      if (tracked.approvalTimer) {
-        clearTimeout(tracked.approvalTimer);
-        tracked.approvalTimer = null;
-      }
       tracked.pendingApprovalDetail = null;
       if (tracked.backfilling && tracked.lastState === "codex-permission") {
         tracked.lastState = "working";
@@ -448,10 +440,6 @@ class CodexLogMonitor {
 
     // Turn-end: happy if tools were used this turn, idle otherwise
     if (state === "codex-turn-end") {
-      if (tracked.approvalTimer) {
-        clearTimeout(tracked.approvalTimer);
-        tracked.approvalTimer = null;
-      }
       tracked.pendingApprovalDetail = null;
       const resolved = this._isTrackedSubagent(tracked)
         ? "idle"
@@ -463,11 +451,10 @@ class CodexLogMonitor {
       return;
     }
 
-    // Approval heuristic: function_call starts a 2s timer — if no exec_command_end arrives,
-    // assume Codex is waiting for user approval and emit codex-permission.
-    // Explicit escalated requests (sandbox_permissions/justification) skip the timer.
+    // Only explicit escalated requests are permission prompts. Older builds
+    // guessed from a missing command-end event after a timeout, but normal Codex
+    // commands can legitimately sit in progress and should keep the pet working.
     if (key === "response_item:function_call") {
-      if (tracked.approvalTimer) clearTimeout(tracked.approvalTimer);
       const cmd = this._extractShellCommand(payload);
       tracked.pendingApprovalDetail = cmd
         ? { command: cmd, rawPayload: payload }
@@ -481,23 +468,12 @@ class CodexLogMonitor {
           });
           return;
         }
-        if (tracked.backfilling) {
-          tracked.lastState = "codex-permission";
-          return;
-        }
-        tracked.approvalTimer = setTimeout(() => {
-          tracked.approvalTimer = null;
-          tracked.lastState = "codex-permission";
-          this._emitStateChange(tracked, "codex-permission", key, {
-            permissionDetail: tracked.pendingApprovalDetail,
-          });
-        }, APPROVAL_HEURISTIC_MS);
       }
     }
 
     // Backfill gate: first-pass replay of a file's historical content skips
-    // every callback and every deferred approval timer, but it still updates
-    // internal state so attach can synthesize the current visible state once.
+    // every callback, but it still updates internal state so attach can
+    // synthesize the current visible state once.
     // Independent of the timestamp-based replay guard, which only helps lines
     // that carry a timestamp field.
     if (tracked.backfilling) {
@@ -650,7 +626,6 @@ class CodexLogMonitor {
   }
 
   _retireTrackedFile(filePath, tracked) {
-    if (tracked && tracked.approvalTimer) clearTimeout(tracked.approvalTimer);
     this._tracked.delete(filePath);
     if (!filePath || !tracked) return;
     this._retiredTracked.delete(filePath);

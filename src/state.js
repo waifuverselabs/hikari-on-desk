@@ -152,6 +152,7 @@ let updateVisualState = null;
 let updateVisualKind = null;
 let updateVisualSvgOverride = null;
 let updateVisualPriority = null;
+let visualChoiceCache = null;
 
 // Ambient desktop-activity source (typing / reading a document / audio playing).
 // Driven by src/ambient-activity.js via setAmbientState(). Only surfaces when no
@@ -312,6 +313,7 @@ function refreshTheme() {
   SLEEPING_SVGS = hitboxRuntime.sleepingSvgs;
 
   currentHitBox = resolveHitBoxForSvg(currentSvg);
+  visualChoiceCache = null;
   refreshUpdateVisualOverride();
 }
 
@@ -505,6 +507,9 @@ function applyState(state, svgOverride, options = {}) {
     }
     return;
   }
+
+  const stateChanged = state !== currentState;
+  if (stateChanged) visualChoiceCache = null;
 
   previousState = currentState;
   currentState = state;
@@ -1864,6 +1869,20 @@ function getSvgOverride(state) {
     displayHintMap: DISPLAY_HINT_MAP,
     theme,
     stateSvgs: STATE_SVGS,
+    pickStateFile(files) {
+      if (!Array.isArray(files) || files.length === 0) return null;
+      const signature = files.join("\u0000");
+      if (
+        visualChoiceCache
+        && visualChoiceCache.state === state
+        && visualChoiceCache.signature === signature
+      ) {
+        return visualChoiceCache.file;
+      }
+      const file = files[Math.floor(Math.random() * files.length)];
+      visualChoiceCache = { state, signature, file };
+      return file;
+    },
   });
 }
 

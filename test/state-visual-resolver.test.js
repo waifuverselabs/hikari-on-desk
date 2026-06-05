@@ -82,6 +82,11 @@ describe("state-visual-resolver SVG overrides", () => {
       { minSessions: 3, file: "three.svg" },
       { minSessions: 2, file: "two.svg" },
     ], 3, "one.svg"), "three.svg");
+    assert.strictEqual(selectTieredStateFile([
+      { minSessions: 1, files: ["juggling.svg", "hula.svg"] },
+    ], 1, "one.svg", {
+      pickStateFile(files) { return files[1]; },
+    }), "hula.svg");
   });
 
   it("uses the most recently updated display hint and ignores headless sessions", () => {
@@ -93,9 +98,11 @@ describe("state-visual-resolver SVG overrides", () => {
 
     assert.strictEqual(getWinningSessionDisplayHint(sessions, "working", {
       build: "building.svg",
-      read: "reading.svg",
+      read: ["reading.svg", "hula.svg"],
       secret: "secret.svg",
-    }), "reading.svg");
+    }, {
+      pickStateFile(files) { return files[1]; },
+    }), "hula.svg");
   });
 
   it("resolves update, idle, working, juggling, thinking, and null overrides", () => {
@@ -115,8 +122,9 @@ describe("state-visual-resolver SVG overrides", () => {
           { minSessions: 3, file: "working-three.svg" },
           { minSessions: 2, file: "working-two.svg" },
         ],
-        jugglingTiers: [{ minSessions: 2, file: "juggling-two.svg" }],
+        jugglingTiers: [{ minSessions: 2, files: ["juggling-two.svg", "hula-two.svg"] }],
       },
+      pickStateFile(files) { return files[files.length - 1]; },
       stateSvgs: {
         working: ["working-one.svg"],
         juggling: ["juggling-one.svg"],

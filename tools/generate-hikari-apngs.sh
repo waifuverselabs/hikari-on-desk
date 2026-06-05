@@ -44,6 +44,7 @@ sheet_file() {
     building) echo "hikari-building.png" ;;
     sweeping) echo "hikari-sweeping.png" ;;
     juggling) echo "hikari-juggling.png" ;;
+    hula) echo "hikari-hula.png" ;;
     error) echo "hikari-error-alert.png" ;;
     work) echo "hikari-work-utility.png" ;;
     status) echo "hikari-status-special.png" ;;
@@ -57,6 +58,7 @@ sheet_frames() {
   case "$1" in
     typing) echo 4 ;;
     thinking|building|sweeping|juggling) echo 8 ;;
+    hula) echo 16 ;;
     dance|idle|sleep|error|work|status|react|mini) echo 6 ;;
     *) echo "unknown sheet key: $1" >&2; exit 1 ;;
   esac
@@ -68,13 +70,13 @@ sheet_crop_w() {
     work|status) echo 300 ;;
     react|error) echo 330 ;;
     mini) echo 320 ;;
-    thinking|building|sweeping|juggling) echo full ;;
+    thinking|building|sweeping|juggling|hula) echo full ;;
     dance|idle|sleep|thinking) echo 340 ;;
     *) echo "" ;;
   esac
 }
 
-for key in typing dance idle sleep thinking building sweeping juggling error work status react mini; do
+for key in typing dance idle sleep thinking building sweeping juggling hula error work status react mini; do
   file="$(sheet_file "${key}")"
   if [[ ! -f "${SHEETS_DIR}/${file}" ]]; then
     echo "source sheet not found: ${SHEETS_DIR}/${file}" >&2
@@ -359,6 +361,7 @@ SPECS=(
   "calico-working-typing.apng|16|61|240|185|typing:1:0:0,typing:2:0:0,typing:3:0:0,typing:4:0:0"
   "calico-working-building.apng|8|8|220|185|building:1:0:0,building:2:0:0,building:3:0:0,building:4:0:0,building:5:0:0,building:6:0:0,building:7:0:0,building:8:0:0|cellbox"
   "calico-working-juggling.apng|8|8|220|185|juggling:1:0:0,juggling:2:0:0,juggling:3:0:0,juggling:4:0:0,juggling:5:0:0,juggling:6:0:0,juggling:7:0:0,juggling:8:0:0|cellbox"
+  "calico-working-hula-hoop.apng|12|16|220|185|hula:1:0:0,hula:2:0:0,hula:3:0:0,hula:4:0:0,hula:5:0:0,hula:6:0:0,hula:7:0:0,hula:8:0:0,hula:9:0:0,hula:10:0:0,hula:11:0:0,hula:12:0:0,hula:13:0:0,hula:14:0:0,hula:15:0:0,hula:16:0:0|cellbox"
   "calico-working-conducting.apng|8|41|220|185|status:3:0:-1,status:3:-2:0,status:3:2:0,status:3:0:1"
   "calico-working-sweeping.apng|8|8|220|185|sweeping:1:0:0,sweeping:2:0:0,sweeping:3:0:0,sweeping:4:0:0,sweeping:5:0:0,sweeping:6:0:0,sweeping:7:0:0,sweeping:8:0:0|cellbox"
   "calico-working-carrying.apng|8|41|220|185|work:5:-3:0,work:5:0:-1,work:5:3:0,work:5:0:1"

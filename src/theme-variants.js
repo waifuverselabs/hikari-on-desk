@@ -4,6 +4,8 @@ const {
   isPlainObject,
   getStateBindingEntry,
   getStateFiles,
+  getTierFiles,
+  getFilePool,
   deepMergeObject,
   basenameOnly,
   mergeFileHitBoxes,
@@ -97,7 +99,7 @@ function buildBaseBindingMetadata(raw) {
         .filter((tier) => isPlainObject(tier))
         .map((tier) => ({
           minSessions: Number.isFinite(tier.minSessions) ? tier.minSessions : 0,
-          originalFile: basenameOnly(tier.file),
+          originalFile: basenameOnly(getTierFiles(tier)[0]),
         }))
         .sort((a, b) => b.minSessions - a.minSessions)
       : [];
@@ -113,7 +115,8 @@ function buildBaseBindingMetadata(raw) {
   const displayHintMap = {};
   if (isPlainObject(raw.displayHintMap)) {
     for (const [key, value] of Object.entries(raw.displayHintMap)) {
-      displayHintMap[basenameOnly(key)] = basenameOnly(value);
+      const files = getFilePool(value).map(basenameOnly).filter(Boolean);
+      displayHintMap[basenameOnly(key)] = files.length > 1 ? files : (files[0] || "");
     }
   }
   return {
@@ -194,7 +197,7 @@ function applyUserOverridesPatch(raw, overrides) {
       if (!isPlainObject(entry)) continue;
       const cleanOriginal = basenameOnly(originalFile);
       const tier = nextTiers.find((candidate) =>
-        isPlainObject(candidate) && basenameOnly(candidate.file) === cleanOriginal
+        isPlainObject(candidate) && basenameOnly(getTierFiles(candidate)[0]) === cleanOriginal
       );
       if (!tier) continue;
       if (typeof entry.file === "string" && entry.file) {

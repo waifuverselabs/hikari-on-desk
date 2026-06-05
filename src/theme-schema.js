@@ -178,6 +178,49 @@ function validateTheme(cfg) {
     }
   }
 
+  if (cfg.displayHintMap !== undefined) {
+    if (!isPlainObject(cfg.displayHintMap)) {
+      errors.push("displayHintMap must be an object when present");
+    } else {
+      for (const [hint, value] of Object.entries(cfg.displayHintMap)) {
+        if (getFilePool(value).length === 0) {
+          errors.push(`displayHintMap.${hint} must be a non-empty string or array of strings`);
+        }
+      }
+    }
+  }
+
+  for (const groupName of ["workingTiers", "jugglingTiers"]) {
+    const group = cfg[groupName];
+    if (group === undefined) continue;
+    if (!Array.isArray(group)) {
+      errors.push(`${groupName} must be an array when present`);
+      continue;
+    }
+    group.forEach((tier, index) => {
+      if (!isPlainObject(tier)) {
+        errors.push(`${groupName}[${index}] must be an object`);
+        return;
+      }
+      if (tier.minSessions !== undefined && !Number.isFinite(tier.minSessions)) {
+        errors.push(`${groupName}[${index}].minSessions must be finite when present`);
+      }
+      if (tier.file !== undefined && (typeof tier.file !== "string" || !tier.file)) {
+        errors.push(`${groupName}[${index}].file must be a non-empty string when present`);
+      }
+      if (tier.files !== undefined) {
+        if (!Array.isArray(tier.files) || tier.files.length === 0) {
+          errors.push(`${groupName}[${index}].files must be a non-empty array when present`);
+        } else if (tier.files.some((file) => typeof file !== "string" || !file)) {
+          errors.push(`${groupName}[${index}].files must contain only non-empty strings`);
+        }
+      }
+      if (getTierFiles(tier).length === 0) {
+        errors.push(`${groupName}[${index}] must define file or files`);
+      }
+    });
+  }
+
   const fallbackStateKeys = Object.keys(normalizedStates);
   for (const stateKey of fallbackStateKeys) {
     const entry = normalizedStates[stateKey];
@@ -300,6 +343,17 @@ function hasReactionBindings(reactions) {
   );
 }
 
+function getTierFiles(tier) {
+  if (!isPlainObject(tier)) return [];
+  if (Array.isArray(tier.files) && tier.files.length > 0) return [...tier.files];
+  return typeof tier.file === "string" && tier.file ? [tier.file] : [];
+}
+
+function getFilePool(value) {
+  if (Array.isArray(value)) return value.filter((file) => typeof file === "string" && file);
+  return typeof value === "string" && value ? [value] : [];
+}
+
 function isMiniSupported(cfg) {
   return !!(isPlainObject(cfg && cfg.miniMode) && cfg.miniMode.supported !== false);
 }
@@ -362,7 +416,7 @@ function collectRequiredAssetFiles(theme) {
   for (const group of [theme && theme.workingTiers, theme && theme.jugglingTiers]) {
     if (!Array.isArray(group)) continue;
     for (const entry of group) {
-      if (entry && typeof entry.file === "string") addThemeAssetFile(files, entry.file);
+      for (const file of getTierFiles(entry)) addThemeAssetFile(files, file);
     }
   }
   if (Array.isArray(theme && theme.idleAnimations)) {
@@ -382,8 +436,8 @@ function collectRequiredAssetFiles(theme) {
     }
   }
   if (isPlainObject(theme && theme.displayHintMap)) {
-    for (const file of Object.values(theme.displayHintMap)) {
-      if (typeof file === "string") addThemeAssetFile(files, file);
+    for (const value of Object.values(theme.displayHintMap)) {
+      for (const file of getFilePool(value)) addThemeAssetFile(files, file);
     }
   }
   if (isPlainObject(theme && theme.updateVisuals) && typeof theme.updateVisuals.checking === "string") {
@@ -674,13 +728,15 @@ function mergeDefaults(raw, themeId, isBuiltin) {
     for (const [k, v] of Object.entries(theme.sounds)) theme.sounds[k] = bn(v);
   }
   if (theme.displayHintMap) {
-    for (const [k, v] of Object.entries(theme.displayHintMap)) theme.displayHintMap[k] = bn(v);
+    for (const [k, v] of Object.entries(theme.displayHintMap)) {
+      theme.displayHintMap[k] = Array.isArray(v) ? v.map(bn).filter(Boolean) : bn(v);
+    }
   }
   if (theme.workingTiers) {
-    for (const t of theme.workingTiers) { if (t.file) t.file = bn(t.file); }
+    for (const t of theme.workingTiers) normalizeTierRuntimeFiles(t, bn);
   }
   if (theme.jugglingTiers) {
-    for (const t of theme.jugglingTiers) { if (t.file) t.file = bn(t.file); }
+    for (const t of theme.jugglingTiers) normalizeTierRuntimeFiles(t, bn);
   }
   if (Array.isArray(theme.idleAnimations)) {
     for (const a of theme.idleAnimations) { if (a && a.file) a.file = bn(a.file); }
@@ -696,6 +752,18 @@ function mergeDefaults(raw, themeId, isBuiltin) {
   if (Array.isArray(theme.sleepingHitboxFiles)) theme.sleepingHitboxFiles = theme.sleepingHitboxFiles.map(bn);
 
   return theme;
+}
+
+function normalizeTierRuntimeFiles(tier, basenameFn) {
+  if (!isPlainObject(tier)) return;
+  const files = getTierFiles(tier).map(basenameFn).filter(Boolean);
+  if (Array.isArray(tier.files)) tier.files = files;
+  if (files.length > 1) tier.files = files;
+  if (typeof tier.file === "string" && tier.file) {
+    tier.file = basenameFn(tier.file);
+  } else if (files[0]) {
+    tier.file = files[0];
+  }
 }
 
 module.exports = {
@@ -719,6 +787,8 @@ module.exports = {
   hasStateBinding,
   normalizeStateBindings,
   hasReactionBindings,
+  getTierFiles,
+  getFilePool,
   supportsIdleTracking,
   deriveIdleMode,
   deriveSleepMode,

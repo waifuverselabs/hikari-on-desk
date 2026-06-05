@@ -105,8 +105,9 @@ describe("theme schema defaults and normalization", () => {
         double: { files: ["nested/a.svg", "../b.svg"] },
       },
       workingTiers: [{ minSessions: 2, file: "../tier.svg" }],
+      jugglingTiers: [{ minSessions: 1, files: ["../juggle.svg", "nested/hula.svg"] }],
       idleAnimations: [{ file: "../look.svg", duration: 100 }],
-      displayHintMap: { "../old.svg": "../new.svg" },
+      displayHintMap: { "../old.svg": ["../new.svg", "nested/alt.svg"] },
       updateVisuals: { checking: "../checking.svg" },
     }), "demo", true);
 
@@ -121,8 +122,10 @@ describe("theme schema defaults and normalization", () => {
     assert.strictEqual(theme.reactions.drag.fileRight, "drag-right.svg");
     assert.deepStrictEqual(theme.reactions.double.files, ["a.svg", "b.svg"]);
     assert.strictEqual(theme.workingTiers[0].file, "tier.svg");
+    assert.strictEqual(theme.jugglingTiers[0].file, "juggle.svg");
+    assert.deepStrictEqual(theme.jugglingTiers[0].files, ["juggle.svg", "hula.svg"]);
     assert.strictEqual(theme.idleAnimations[0].file, "look.svg");
-    assert.deepStrictEqual(theme.displayHintMap, { "../old.svg": "new.svg" });
+    assert.deepStrictEqual(theme.displayHintMap, { "../old.svg": ["new.svg", "alt.svg"] });
     assert.deepStrictEqual(theme.updateVisuals, { checking: "checking.svg" });
   });
 
@@ -164,13 +167,13 @@ describe("theme schema defaults and normalization", () => {
       states: { idle: ["../idle.svg"], working: ["working.svg"] },
       miniMode: { states: { "mini-idle": ["mini/idle.svg"] } },
       workingTiers: [{ file: "../tier.svg" }],
-      jugglingTiers: [{ file: "juggling.svg" }],
+      jugglingTiers: [{ files: ["juggling.svg", "nested/hula.svg"] }],
       idleAnimations: [{ file: "idle-look.svg" }],
       reactions: {
         drag: { file: "drag.svg", fileLeft: "../drag-left.svg", fileRight: "nested/drag-right.svg" },
         double: { files: ["drag.svg", "../double.svg"] },
       },
-      displayHintMap: { old: "../hint.svg" },
+      displayHintMap: { old: ["../hint.svg", "nested/hint-alt.svg"] },
       updateVisuals: { checking: "../checking.svg" },
     });
 
@@ -180,7 +183,9 @@ describe("theme schema defaults and normalization", () => {
       "drag-left.svg",
       "drag-right.svg",
       "drag.svg",
+      "hint-alt.svg",
       "hint.svg",
+      "hula.svg",
       "idle-look.svg",
       "idle.svg",
       "juggling.svg",

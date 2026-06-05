@@ -80,7 +80,10 @@
     },
     {
       "minSessions": 2,
-      "file": "calico-working-juggling.apng"
+      "files": [
+        "calico-working-juggling.apng",
+        "calico-working-hula-hoop.apng"
+      ]
     },
     {
       "minSessions": 1,
@@ -90,11 +93,17 @@
   "jugglingTiers": [
     {
       "minSessions": 2,
-      "file": "calico-working-conducting.apng"
+      "files": [
+        "calico-working-juggling.apng",
+        "calico-working-hula-hoop.apng"
+      ]
     },
     {
       "minSessions": 1,
-      "file": "calico-working-juggling.apng"
+      "files": [
+        "calico-working-juggling.apng",
+        "calico-working-hula-hoop.apng"
+      ]
     }
   ],
   "idleAnimations": [
@@ -106,8 +115,14 @@
   "displayHintMap": {
     "clawd-working-building.svg": "calico-working-building.apng",
     "clawd-working-typing.svg": "calico-working-typing.apng",
-    "clawd-headphones-groove.svg": "calico-working-juggling.apng",
-    "clawd-working-juggling.svg": "calico-working-juggling.apng",
+    "clawd-headphones-groove.svg": [
+      "calico-working-juggling.apng",
+      "calico-working-hula-hoop.apng"
+    ],
+    "clawd-working-juggling.svg": [
+      "calico-working-juggling.apng",
+      "calico-working-hula-hoop.apng"
+    ],
     "clawd-working-conducting.svg": "calico-working-conducting.apng",
     "clawd-working-thinking.svg": "calico-thinking.apng"
   },
@@ -260,6 +275,7 @@
       "calico-working-building.apng": 1,
       "calico-working-carrying.apng": 1,
       "calico-working-conducting.apng": 1,
+      "calico-working-hula-hoop.apng": 1,
       "calico-working-juggling.apng": 1,
       "calico-working-sweeping.apng": 1,
       "calico-working-typing.apng": 1,
@@ -355,6 +371,10 @@
         "y": 0
       },
       "calico-working-conducting.apng": {
+        "x": 0,
+        "y": 0
+      },
+      "calico-working-hula-hoop.apng": {
         "x": 0,
         "y": 0
       },
